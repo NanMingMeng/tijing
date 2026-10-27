@@ -6,11 +6,11 @@
 
 ## 当前版本
 
-- 版本：0.1.0
+- 版本：0.1.1
 - 平台：Android 10+，arm64-v8a
 - 开源协议：MIT
-- APK：`dist/题镜-0.1.0-release-2026-10-27.apk`
-- SHA256：`30D158FD3D29006DDEA175B9A30FC25071624DCDBF58CA98D77AB4D747F99F6A`
+- APK：`dist/题镜-0.1.1-release-2026-10-27.apk`
+- SHA256：`C8DB699B30E53988E0979084499CF78A7BEABA8D9FF8379668005FFF59CDE7C0`
 
 ## 已实现
 
@@ -109,4 +109,5 @@ dart run tool/check_import.dart "D:\下载\建筑专业知识练习题库.xlsx"
 ## 许可证
 
 MIT，详见 [LICENSE](LICENSE)。
+
 

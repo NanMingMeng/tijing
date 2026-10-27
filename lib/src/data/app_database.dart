@@ -169,7 +169,6 @@ class AppDatabase {
       where.write(' AND search_text LIKE ?');
       args.add('%$keyword%');
     }
-    args.add(limit);
     final rows = await db.query(
       'questions',
       where: where.toString(),
@@ -261,6 +260,8 @@ class AppDatabase {
     await db.delete('ai_records');
   }
 }
+
+
 
 
 
