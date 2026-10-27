@@ -204,13 +204,21 @@ class AppDatabase {
     return rows.isNotEmpty;
   }
 
-  Future<void> insertQuestions(List<Question> questions) async {
+  Future<void> insertQuestions(
+    List<Question> questions, {
+    void Function(int done, int total)? onProgress,
+  }) async {
     if (questions.isEmpty) return;
     final db = await database;
     await db.transaction((txn) async {
-      for (final question in questions) {
-        await txn.insert('questions', question.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+      for (var i = 0; i < questions.length; i++) {
+        await txn.insert('questions', questions[i].toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+        if (i % 25 == 0) {
+          onProgress?.call(i + 1, questions.length);
+          await Future<void>.delayed(Duration.zero);
+        }
       }
+      onProgress?.call(questions.length, questions.length);
     });
   }
 
@@ -260,6 +268,7 @@ class AppDatabase {
     await db.delete('ai_records');
   }
 }
+
 
 
 

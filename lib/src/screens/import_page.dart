@@ -32,6 +32,8 @@ class _ImportPageState extends State<ImportPage> {
   Map<String, int> _mapping = {};
   BankImportResult? _result;
   bool _loading = false;
+  double _progress = 0;
+  String _progressLabel = "";
 
   Future<void> _pickFile() async {
     final file = await FilePicker.pickFile(
@@ -82,7 +84,11 @@ class _ImportPageState extends State<ImportPage> {
 
   Future<void> _import() async {
     if (_bytes == null) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _progress = 0;
+      _progressLabel = '准备导入…';
+    });
     try {
       List<QuestionDraft> drafts;
       final name = (_fileName ?? '').toLowerCase();
@@ -97,7 +103,17 @@ class _ImportPageState extends State<ImportPage> {
         if (_preview == null) return;
         drafts = _preview!.drafts;
       }
-      final result = await _importService.importDrafts(widget.bank.id, drafts);
+      final result = await _importService.importDrafts(
+        widget.bank.id,
+        drafts,
+        onProgress: (value, label) {
+          if (!mounted) return;
+          setState(() {
+            _progress = value;
+            _progressLabel = label;
+          });
+        },
+      );
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -140,6 +156,34 @@ class _ImportPageState extends State<ImportPage> {
           if (_result != null) ...[
             const SizedBox(height: 18),
             _resultCard(_result!),
+          ],
+          if (_loading) ...[
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: Text(_progressLabel, style: const TextStyle(fontWeight: FontWeight.w600))),
+                      Text('${(_progress * 100).clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  LinearProgressIndicator(
+                    value: _progress,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ],
+              ),
+            ),
           ],
           const SizedBox(height: 20),
           FilledButton.icon(
@@ -262,6 +306,8 @@ class _ImportPageState extends State<ImportPage> {
     );
   }
 }
+
+
 
 
 
