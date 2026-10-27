@@ -9,8 +9,7 @@
 - 版本：0.1.2
 - 平台：Android 10+，arm64-v8a
 - 开源协议：MIT
-- APK：`dist/题镜-0.1.2-release-2026-10-27.apk`
-- SHA256：`1B751165B48FA11B36EBA460AE23EF396829B09E81014313C66F520AC5939017`
+- APK：通过 GitHub Releases 分发，本地构建产物不进仓库
 
 ## 已实现
 
@@ -21,6 +20,7 @@
   - 支持单选、多选、判断、填空、简答
   - 支持答案写选项原文或 A/B/C/D
   - 导入时保守查重，几乎完全重复才跳过
+  - 导入过程显示进度条
 - Word `.docx` 导入：
   - 本地规则拆题
   - 识别不到的题标问题，不硬猜
@@ -57,41 +57,35 @@
 
 ## 开发环境
 
-本机使用：
-
 - Flutter 3.47.8
 - Dart 3.13.7
-- JDK 17（完整版，带 `jlink`）
+- JDK 17（完整版，必须带 `jlink`）
 - Android SDK 36
 - NDK 28.2
 - CMake 3.22.1
 
-项目源码路径：
-
-`F:\desktop\题库\题镜-2026-10-27`
-
-由于 Gradle/Kotlin 对中文路径支持不好，本机另外建了两个英文路径链接用于构建：
-
-- `F:\desktop\flutter_sdk` → Flutter SDK
-- `F:\desktop\jdk17` → JDK 17
-- `F:\desktop\tijing_work` → 项目目录
-
 ## 构建 release APK
 
-```powershell
-Set-Location F:\desktop\tijing_work
-
-$env:JAVA_HOME='F:\desktop\jdk17'
-$env:ANDROID_HOME='C:\Users\NanMing\AppData\Local\Android\Sdk'
-$env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
-$env:Path='F:\desktop\flutter_sdk\bin;F:\desktop\jdk17\bin;' + $env:ANDROID_HOME + '\platform-tools;' + $env:ANDROID_HOME + '\cmdline-tools\latest\bin;' + $env:Path
-
+```bash
+flutter pub get
 flutter build apk --release
 ```
 
 产物：
 
 `build/app/outputs/flutter-apk/app-release.apk`
+
+### Windows 构建注意
+
+Gradle/Kotlin 对中文路径支持不稳定。如果项目或 Flutter SDK 放在中文目录，建议先映射到英文路径，例如：
+
+```powershell
+New-Item -ItemType Junction -Path F:\tijing_work -Target <项目目录>
+New-Item -ItemType Junction -Path F:\flutter_sdk -Target <Flutter SDK 目录>
+New-Item -ItemType Junction -Path F:\jdk17 -Target <JDK 17 目录>
+```
+
+再从英文路径启动构建。
 
 ## 测试
 
@@ -103,13 +97,9 @@ dart analyze lib
 真实 Excel 导入检查：
 
 ```powershell
-dart run tool/check_import.dart "D:\下载\建筑专业知识练习题库.xlsx"
+dart run tool/check_import.dart "<你的题库.xlsx>"
 ```
 
 ## 许可证
 
 MIT，详见 [LICENSE](LICENSE)。
-
-
-
-
