@@ -27,11 +27,12 @@ class AppDatabase {
     final path = p.join(root, 'tijing.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: _create,
+      onUpgrade: _upgrade,
     );
   }
 
@@ -61,6 +62,8 @@ class AppDatabase {
         tags_json TEXT NOT NULL DEFAULT '[]',
         difficulty INTEGER NOT NULL DEFAULT 0,
         content_hash TEXT NOT NULL DEFAULT '',
+        source_index INTEGER NOT NULL DEFAULT 0,
+        order_index INTEGER NOT NULL DEFAULT 0,
         search_text TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
@@ -69,6 +72,7 @@ class AppDatabase {
     ''');
     await db.execute('CREATE INDEX idx_questions_bank ON questions(bank_id)');
     await db.execute('CREATE UNIQUE INDEX idx_questions_hash ON questions(bank_id, content_hash)');
+    await db.execute('CREATE INDEX idx_questions_order ON questions(bank_id, order_index)');
     await db.execute('''
       CREATE TABLE ai_records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +88,29 @@ class AppDatabase {
       )
     ''');
     await db.execute('CREATE INDEX idx_ai_question ON ai_records(question_id)');
+  }
+
+  /// v1 → v2：新增原题库序号与库内序号，并用 rowid 顺序回填历史数据。
+  Future<void> _upgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+          "ALTER TABLE questions ADD COLUMN source_index INTEGER NOT NULL DEFAULT 0");
+      await db.execute(
+          "ALTER TABLE questions ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0");
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_questions_order ON questions(bank_id, order_index)');
+      // 老数据没有原始行号，用插入顺序（rowid）作为两个序号的最佳近似。
+      await db.execute('''
+        UPDATE questions
+        SET order_index = (
+          SELECT COUNT(*) FROM questions q2
+          WHERE q2.bank_id = questions.bank_id AND q2.rowid <= questions.rowid
+        )
+        WHERE order_index = 0
+      ''');
+      await db.execute(
+          'UPDATE questions SET source_index = order_index WHERE source_index = 0');
+    }
   }
 
   Future<QuestionBank> createBank({
@@ -173,7 +200,7 @@ class AppDatabase {
       'questions',
       where: where.toString(),
       whereArgs: args,
-      orderBy: 'created_at DESC',
+      orderBy: 'order_index ASC, rowid ASC',
       limit: limit,
     );
     return rows.map(Question.fromMap).toList();
@@ -181,7 +208,7 @@ class AppDatabase {
 
   Future<List<Question>> getAllQuestions() async {
     final db = await database;
-    final rows = await db.query('questions', orderBy: 'created_at DESC');
+    final rows = await db.query('questions', orderBy: 'order_index ASC, rowid ASC');
     return rows.map(Question.fromMap).toList();
   }
 
@@ -230,6 +257,28 @@ class AppDatabase {
   Future<void> deleteQuestion(String id) async {
     final db = await database;
     await db.delete('questions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// 本题库下一个可用的库内序号（删题不重排，保证编号稳定）。
+  Future<int> nextOrderIndex(String bankId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COALESCE(MAX(order_index), 0) AS m FROM questions WHERE bank_id = ?',
+      [bankId],
+    );
+    final current = int.tryParse((result.first['m'] ?? '0').toString()) ?? 0;
+    return current + 1;
+  }
+
+  /// 本题库下一个可用的原题库序号。
+  Future<int> nextSourceIndex(String bankId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COALESCE(MAX(source_index), 0) AS m FROM questions WHERE bank_id = ?',
+      [bankId],
+    );
+    final current = int.tryParse((result.first['m'] ?? '0').toString()) ?? 0;
+    return current + 1;
   }
 
   Future<int> countQuestions(String bankId) async {

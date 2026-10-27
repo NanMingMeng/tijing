@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/app_database.dart';
 import '../models/question.dart';
+import '../services/bank_events.dart';
 import '../theme.dart';
 import 'bank_detail_page.dart';
 import 'import_page.dart';
@@ -21,9 +22,21 @@ class _BankListPageState extends State<BankListPage> {
   void initState() {
     super.initState();
     _future = _db.listBanks();
+    BankEvents.revision.addListener(_onDataChanged);
   }
 
-  void _refresh() => setState(() => _future = _db.listBanks());
+  @override
+  void dispose() {
+    BankEvents.revision.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (!mounted) return;
+    setState(() => _future = _db.listBanks());
+  }
+
+  void _refresh() => _onDataChanged();
 
   Future<void> _createBank() async {
     final controller = TextEditingController();
@@ -47,6 +60,7 @@ class _BankListPageState extends State<BankListPage> {
     );
     if (name == null || name.isEmpty) return;
     final bank = await _db.createBank(name: name);
+    BankEvents.bump();
     if (!mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ImportPage(bank: bank)));
     _refresh();
@@ -70,6 +84,7 @@ class _BankListPageState extends State<BankListPage> {
     );
     if (ok == true) {
       await _db.deleteBank(bank.id);
+      BankEvents.bump();
       _refresh();
     }
   }

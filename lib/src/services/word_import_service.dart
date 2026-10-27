@@ -49,7 +49,7 @@ class WordImportService {
 
     void flush() {
       if (current == null) return;
-      drafts.add(current!.build());
+      drafts.add(current!.build(sourceIndex: drafts.length + 1));
       current = null;
     }
 
@@ -108,7 +108,7 @@ class _Builder {
   String explanation = '';
   final List<QuestionOption> options = [];
 
-  QuestionDraft build() {
+  QuestionDraft build({int sourceIndex = 0}) {
     final type = QuestionType.fromLabel(typeText);
     final answerParts = answer
         .replaceAll('；', ';')
@@ -146,6 +146,7 @@ class _Builder {
       answerTexts: texts,
       explanation: explanation,
       issues: issues,
+      sourceIndex: sourceIndex,
     );
   }
 

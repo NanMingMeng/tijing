@@ -195,13 +195,24 @@ class _SearchResultPageState extends State<SearchResultPage> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              confident ? '题库里有高置信度答案' : '还不能确定是哪一道，请从下面 3 道里选',
+              _headerText(result),
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _headerText(MatchResult result) {
+    final best = result.candidates.first;
+    final q = best.question;
+    final where = q.indexDescription.isEmpty ? '' : '，命中$q.indexDescription'.replaceFirst('命中', '命中 ');
+    if (result.confident) {
+      return '题库里找到原题$where';
+    }
+    final top = (best.score * 100).toStringAsFixed(0);
+    return '还不能确定是哪一道（最像的 ${q.indexDescription.isEmpty ? '候选' : q.indexDescription}，${top}%），请从下面选';
   }
 
   Widget _candidateCard(MatchCandidate candidate) {
@@ -228,9 +239,29 @@ class _SearchResultPageState extends State<SearchResultPage> {
                     child: Text(question.type.label, style: const TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w700)),
                   ),
                   const Spacer(),
-                  Text('相似度 ${(candidate.score * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 11, color: AppTheme.muted)),
+                  Text('相似度 ${(candidate.score * 100).toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: candidate.score >= 0.92 ? AppTheme.primary : AppTheme.muted,
+                      )),
                 ],
               ),
+              if (question.indexDescription.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.tag_rounded, size: 13, color: AppTheme.muted),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        question.indexDescription,
+                        style: const TextStyle(fontSize: 12, color: AppTheme.muted, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 9),
               Text(question.stem, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, height: 1.45, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
@@ -259,6 +290,25 @@ class _SearchResultPageState extends State<SearchResultPage> {
             children: [
               Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: AppTheme.line, borderRadius: BorderRadius.circular(99)))),
               const SizedBox(height: 18),
+              if (question.indexDescription.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.tag_rounded, size: 14, color: AppTheme.primary),
+                      const SizedBox(width: 5),
+                      Text(question.indexDescription,
+                          style: const TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(question.stem, style: const TextStyle(fontSize: 18, height: 1.5, fontWeight: FontWeight.w700)),
               const SizedBox(height: 16),
               ...question.options.map((option) => Container(

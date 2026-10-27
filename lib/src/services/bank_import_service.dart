@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../data/app_database.dart';
 import '../models/import_draft.dart';
 import '../models/question.dart';
+import 'bank_events.dart';
 import 'matcher.dart';
 
 typedef ImportProgress = void Function(double value, String label);
@@ -33,6 +34,12 @@ class BankImportService {
       });
     }
     final now = DateTime.now().toIso8601String();
+    // 库内序号：接着已有最大值往下排，删题不重排，编号保持稳定。
+    var nextOrder = await db.nextOrderIndex(bankId);
+    // 原题库序号：同一题库多次导入时累加，避免不同文件的序号互相撞车。
+    final sourceBase = (await db.nextSourceIndex(bankId)) - 1;
+    // 独立计数器：文件里被查重跳过的行仍占用它的原题号，编号不会错位。
+    var fallbackSource = 0;
     final toInsert = <Question>[];
     final suspicious = <String>[];
     var skipped = 0;
@@ -93,6 +100,9 @@ class BankImportService {
         tags: draft.tags,
         difficulty: draft.difficulty,
         contentHash: hash,
+        sourceIndex: sourceBase +
+            (draft.sourceIndex > 0 ? draft.sourceIndex : ++fallbackSource),
+        orderIndex: nextOrder++,
         createdAt: now,
         updatedAt: now,
       ));
@@ -116,6 +126,7 @@ class BankImportService {
       },
     );
     onProgress?.call(1, '导入完成');
+    if (toInsert.isNotEmpty) BankEvents.bump();
     return BankImportResult(
       imported: toInsert.length,
       skipped: skipped,

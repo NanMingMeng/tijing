@@ -114,6 +114,8 @@ class Question {
     this.tags = const [],
     this.difficulty = 0,
     this.contentHash = '',
+    this.sourceIndex = 0,
+    this.orderIndex = 0,
     this.createdAt = '',
     this.updatedAt = '',
   });
@@ -132,12 +134,35 @@ class Question {
   final List<String> tags;
   final int difficulty;
   final String contentHash;
+
+  /// 原题库序号：导入时这份文件里的第几道题（从 1 开始，跳过表头）。
+  /// 0 表示来源不明（例如手工新建、旧数据未回填）。
+  final int sourceIndex;
+
+  /// 库内序号：在本题库里的固定排序号（从 1 开始），删题后不重排。
+  final int orderIndex;
   final String createdAt;
   final String updatedAt;
 
   String get answerDisplay {
     if (answerTexts.isNotEmpty) return answerTexts.join('、');
     return answerKeys.join('、');
+  }
+
+  /// 原题库序号显示文本，例如「原题 #137」；来源不明时给空串。
+  String get sourceIndexLabel => sourceIndex > 0 ? '#$sourceIndex' : '';
+
+  /// 库内序号显示文本，例如「库内 #138」。
+  String get orderIndexLabel => orderIndex > 0 ? '#$orderIndex' : '';
+
+  /// 搜索/详情里用的完整编号描述。
+  String get indexDescription {
+    if (sourceIndex > 0 && orderIndex > 0) {
+      return '原题库第 $sourceIndex 题 · 库内第 $orderIndex 题';
+    }
+    if (sourceIndex > 0) return '原题库第 $sourceIndex 题';
+    if (orderIndex > 0) return '库内第 $orderIndex 题';
+    return '';
   }
 
   String get searchText {
@@ -164,6 +189,8 @@ class Question {
     List<String>? tags,
     int? difficulty,
     String? contentHash,
+    int? sourceIndex,
+    int? orderIndex,
     String? createdAt,
     String? updatedAt,
   }) {
@@ -182,6 +209,8 @@ class Question {
       tags: tags ?? this.tags,
       difficulty: difficulty ?? this.difficulty,
       contentHash: contentHash ?? this.contentHash,
+      sourceIndex: sourceIndex ?? this.sourceIndex,
+      orderIndex: orderIndex ?? this.orderIndex,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -203,6 +232,8 @@ class Question {
       'tags_json': jsonEncode(tags),
       'difficulty': difficulty,
       'content_hash': contentHash,
+      'source_index': sourceIndex,
+      'order_index': orderIndex,
       'search_text': searchText,
       'created_at': createdAt,
       'updated_at': updatedAt,
@@ -237,6 +268,8 @@ class Question {
       tags: tagsRaw is List ? tagsRaw.map((e) => e.toString()).toList() : [],
       difficulty: int.tryParse((map['difficulty'] ?? '0').toString()) ?? 0,
       contentHash: (map['content_hash'] ?? '').toString(),
+      sourceIndex: int.tryParse((map['source_index'] ?? '0').toString()) ?? 0,
+      orderIndex: int.tryParse((map['order_index'] ?? '0').toString()) ?? 0,
       createdAt: (map['created_at'] ?? '').toString(),
       updatedAt: (map['updated_at'] ?? '').toString(),
     );

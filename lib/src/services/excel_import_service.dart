@@ -228,6 +228,7 @@ class ExcelImportService {
       drafts.add(QuestionDraft(
         stem: stem,
         type: type,
+        sourceIndex: rowIndex + 1,
         options: [
           for (final option in options)
             option.copyWith(isCorrect: answerKeys.contains(option.key)),

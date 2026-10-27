@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/app_database.dart';
 import '../models/question.dart';
+import '../services/bank_events.dart';
 import '../theme.dart';
 import 'bank_list_page.dart';
 import 'camera_page.dart';
@@ -22,6 +23,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _future = _load();
+    BankEvents.revision.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    BankEvents.revision.removeListener(_refresh);
+    super.dispose();
   }
 
   Future<_HomeStats> _load() async {
@@ -30,7 +38,10 @@ class _HomePageState extends State<HomePage> {
     return _HomeStats(banks: banks, totalQuestions: total);
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() {
+    if (!mounted) return;
+    setState(() => _future = _load());
+  }
 
   @override
   Widget build(BuildContext context) {

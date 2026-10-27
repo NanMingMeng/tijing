@@ -14,6 +14,7 @@ class QuestionDraft {
     this.tags = const [],
     this.difficulty = 0,
     this.issues = const [],
+    this.sourceIndex = 0,
   });
 
   final String stem;
@@ -28,6 +29,9 @@ class QuestionDraft {
   final List<String> tags;
   final int difficulty;
   final List<String> issues;
+
+  /// 这份导入文件里的第几道题（从 1 开始，不含表头）。0 表示来源不明。
+  final int sourceIndex;
 
   bool get hasIssues => issues.isNotEmpty;
 }
