@@ -67,7 +67,9 @@ class _SearchResultPageState extends State<SearchResultPage> {
     final settings = await AiSettingsStore.load();
     if (!settings.ready) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先在设置里填写 AI 接口和密钥')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('AI 还不可用：${settings.missingHint}，请先在设置里补全')),
+      );
       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsPage()));
       return;
     }
@@ -79,7 +81,11 @@ class _SearchResultPageState extends State<SearchResultPage> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('使用 AI 作答'),
-          content: const Text('题目文字会发送给你选择的模型服务。API Key 只保存在本机安全存储里，不会写进分享文件。'),
+          content: Text(
+            AiSettingsStore.sendImage && widget.imagePath != null
+                ? '题目照片和你修正后的文字会一起发送给你选择的模型服务，由模型自己读图作答。API Key 只保存在本机安全存储里，不会写进分享文件。'
+                : '题目文字会发送给你选择的模型服务。API Key 只保存在本机安全存储里，不会写进分享文件。',
+          ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
             FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('继续')),
@@ -94,7 +100,12 @@ class _SearchResultPageState extends State<SearchResultPage> {
       _aiError = null;
     });
     try {
-      final answer = await AiService.ask(settings: settings, questionText: _text.text);
+      final answer = await AiService.ask(
+        settings: settings,
+        questionText: _text.text,
+        imagePath: widget.imagePath,
+        preferImage: AiSettingsStore.sendImage,
+      );
       if (!mounted) return;
       final best = _result?.candidates.isNotEmpty == true ? _result!.candidates.first.question : null;
       await _db.saveAiRecord(AiRecord(
@@ -207,7 +218,8 @@ class _SearchResultPageState extends State<SearchResultPage> {
   String _headerText(MatchResult result) {
     final best = result.candidates.first;
     final q = best.question;
-    final where = q.indexDescription.isEmpty ? '' : '，命中$q.indexDescription'.replaceFirst('命中', '命中 ');
+    final desc = q.indexDescription;
+    final where = desc.isEmpty ? '' : '，命中 $desc';
     if (result.confident) {
       return '题库里找到原题$where';
     }

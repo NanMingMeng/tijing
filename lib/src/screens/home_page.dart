@@ -4,6 +4,7 @@ import '../data/app_database.dart';
 import '../models/question.dart';
 import '../services/bank_events.dart';
 import '../theme.dart';
+import 'bank_detail_page.dart';
 import 'bank_list_page.dart';
 import 'camera_page.dart';
 import 'history_page.dart';
@@ -252,7 +253,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _bankRow(BuildContext context, QuestionBank bank) {
-    return Container(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => BankDetailPage(bank: bank)),
+        );
+        _refresh();
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -283,6 +292,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const Icon(Icons.chevron_right_rounded, color: AppTheme.muted),
         ],
+      ),
       ),
     );
   }

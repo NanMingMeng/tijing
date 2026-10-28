@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/ai_search_page.dart';
 import 'screens/bank_list_page.dart';
 import 'screens/history_page.dart';
 import 'screens/home_page.dart';
@@ -35,6 +36,7 @@ class _AppShellState extends State<AppShell> {
     final pages = const [
       HomePage(),
       BankListPage(),
+      AiSearchPage(),
       HistoryPage(),
       SettingsPage(),
     ];
@@ -49,6 +51,7 @@ class _AppShellState extends State<AppShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: '首页'),
           NavigationDestination(icon: Icon(Icons.library_books_outlined), selectedIcon: Icon(Icons.library_books_rounded), label: '题库'),
+          NavigationDestination(icon: Icon(Icons.travel_explore_outlined), selectedIcon: Icon(Icons.travel_explore_rounded), label: 'AI 查题'),
           NavigationDestination(icon: Icon(Icons.history_outlined), selectedIcon: Icon(Icons.history_rounded), label: '历史'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: '设置'),
         ],

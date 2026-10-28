@@ -19,6 +19,7 @@ class _SettingsPageState extends State<SettingsPage> {
   AiProvider _provider = AiProvider.deepSeek;
   bool _loading = true;
   bool _saving = false;
+  bool _sendImage = true;
 
   @override
   void initState() {
@@ -42,21 +43,26 @@ class _SettingsPageState extends State<SettingsPage> {
       _base.text = settings.baseUrl;
       _model.text = settings.model;
       _key.text = settings.apiKey;
+      _sendImage = AiSettingsStore.sendImage;
       _loading = false;
     });
   }
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    await AiSettingsStore.save(AiSettings(
+    final settings = AiSettings(
       provider: _provider,
       baseUrl: _base.text,
       model: _model.text,
       apiKey: _key.text,
-    ));
+    );
+    await AiSettingsStore.save(settings, sendImageValue: _sendImage);
     if (!mounted) return;
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('设置已保存')));
+    final hint = settings.missingHint;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(hint.isEmpty ? '设置已保存' : '设置已保存，但${hint}，AI 作答仍不可用'),
+    ));
   }
 
   @override
@@ -81,7 +87,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (_base.text.isEmpty || AiProvider.values.any((p) => p.defaultBaseUrl == _base.text)) {
                         _base.text = value.defaultBaseUrl;
                       }
-                      if (_model.text.isEmpty || AiProvider.values.any((p) => p.defaultModel == _model.text)) {
+                      final models = AiProvider.values.map((p) => p.defaultModel).toSet();
+                      if (_model.text.trim().isEmpty || models.contains(_model.text)) {
                         _model.text = value.defaultModel;
                       }
                     });
@@ -107,7 +114,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     helperText: 'API Key 不会写进分享文件或备份文件。',
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 6),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _sendImage,
+                  onChanged: (value) => setState(() => _sendImage = value),
+                  title: const Text('让 AI 直接看原图作答', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text(
+                    '开启后把题目照片一起发给模型，由模型自己读图，不依赖 OCR 文字，避免识别错误导致答错。需要所选模型支持图像输入（如 gpt-4o、qwen-vl、glm-4v、claude、gemini）。',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 FilledButton.icon(
                   onPressed: _saving ? null : _save,
                   icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_rounded),
@@ -155,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 28),
                 const Text('关于题镜', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                const Text('题镜 0.1.0\n离线 OCR · 本地题库 · AI 兜底', style: TextStyle(color: AppTheme.muted, fontSize: 13, height: 1.6)),
+                const Text('题镜 0.2.4\n离线 OCR · 本地题库 · AI 兜底', style: TextStyle(color: AppTheme.muted, fontSize: 13, height: 1.6)),
               ],
             ),
     );
