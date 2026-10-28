@@ -53,3 +53,10 @@ dist/
 *.bak
 .dart_tool/
 build/
+
+# 正式签名（切勿提交）
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+*.jks
+*.keystore
